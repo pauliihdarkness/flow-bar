@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Función auxiliar para verificar si el usuario es Admin
+    function isAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Función para verificar si el usuario es Staff (Admin o Barman)
+    function isStaff() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'barman'];
+    }
+
+    // REGLAS PARA PRODUCTOS
+    match /products/{productId} {
+      // Cualquier persona (cliente) puede ver el menú
+      allow read: if true;
+      // Solo el Admin puede gestionar el catálogo
+      allow write: if isAdmin();
+    }
+
+    // REGLAS PARA CATEGORÍAS
+    match /categories/{categoryId} {
+      // Cualquier persona puede ver las categorías para filtrar
+      allow read: if true;
+      // Solo el Admin puede gestionar las categorías
+      allow write: if isAdmin();
+    }
+
+    // REGLAS PARA USUARIOS/STAFF
+    match /users/{userId} {
+      // El staff puede ver la lista de personal
+      allow read: if isStaff();
+      // Solo el Admin puede gestionar roles
+      allow write: if isAdmin();
+    }
+
+    // REGLAS PARA PEDIDOS (ORDERS)
+    match /orders/{orderId} {
+      // El cliente puede crear su pedido al escanear el QR
+      allow create: if true;
+      // Solo el Staff puede ver y gestionar los pedidos pendientes y pagados
+      allow read, update, delete: if isStaff();
+    }
+
+    // REGLAS PARA JORNADAS (SHIFTS)
+    match /shifts/{shiftId} {
+      // El menú necesita saber si hay una caja abierta
+      allow read: if true;
+      // Solo el Staff puede abrir/cerrar caja
+      allow write: if isStaff();
+    }
+  }
+}
