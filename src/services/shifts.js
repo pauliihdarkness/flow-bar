@@ -90,3 +90,28 @@ export const getShiftsHistory = async () => {
     throw error;
   }
 };
+
+/**
+ * Obtiene los detalles de una jornada específica
+ */
+export const getShiftById = async (shiftId) => {
+  try {
+    const docRef = doc(db, 'shifts', shiftId);
+    const snapshot = await getDocs(query(shiftsCollection)); // Temporary search if doc() reference is direct
+    // Since we usually get from shiftsCollection, let's use a simpler approach
+    const shiftDoc = snapshot.docs.find(d => d.id === shiftId);
+    
+    if (!shiftDoc) return null;
+    
+    const data = shiftDoc.data();
+    return {
+      id: shiftId,
+      ...data,
+      openedAt: data.openedAt?.toDate(),
+      closedAt: data.closedAt?.toDate()
+    };
+  } catch (error) {
+    console.error("Error getting shift by ID:", error);
+    throw error;
+  }
+};

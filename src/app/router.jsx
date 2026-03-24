@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MenuPage from '../pages/menu/MenuPage';
+import OrderReceipt from '../pages/menu/OrderReceipt';
 import BarPage from '../pages/bar/BarPage';
 import LoginPage from '../pages/admin/LoginPage';
 import AdminPage from '../pages/admin/AdminPage';
@@ -10,6 +11,7 @@ import AdminPersonal from '../pages/admin/AdminPersonal';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminHistory from '../pages/admin/AdminHistory';
 import AdminShifts from '../pages/admin/AdminShifts';
+import ShiftDetails from '../pages/admin/ShiftDetails';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 
 const AppRouter = () => {
@@ -18,6 +20,7 @@ const AppRouter = () => {
       <Routes>
         {/* Rutas Públicas */}
         <Route path="/menu" element={<MenuPage />} />
+        <Route path="/menu/order/:id" element={<OrderReceipt />} />
         <Route path="/login" element={<LoginPage />} />
         
         {/* Rutas Protegidas - Barman */}
@@ -46,6 +49,7 @@ const AppRouter = () => {
           <Route path="personal" element={<AdminPersonal />} />
           <Route path="history" element={<AdminHistory />} />
           <Route path="shifts" element={<AdminShifts />} />
+          <Route path="shifts/:id" element={<ShiftDetails />} />
         </Route>
 
         {/* Redirección por defecto */}

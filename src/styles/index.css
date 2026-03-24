@@ -66,3 +66,52 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary);
 }
+
+/* ========== PRINT STYLES ========== */
+@media print {
+  /* Reset page to white */
+  html, body, #root {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide all interactive & decorative UI */
+  .no-print,
+  nav,
+  button,
+  .fixed {
+    display: none !important;
+  }
+
+  /* Ticket container adjustments */
+  .print-ticket {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    border-radius: 0 !important;
+    margin: 0 auto !important;
+    padding: 24px !important;
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure dark backgrounds are removed */
+  .bg-dark, .bg-card\/40, [class*="bg-dark"] {
+    background: white !important;
+  }
+
+  /* Force text colors for readability */
+  .print-ticket * {
+    color: black !important;
+  }
+  .print-ticket .text-primary {
+    color: #ff4d4d !important;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 10mm;
+    size: 80mm auto; /* Thermal receipt width */
+  }
+}

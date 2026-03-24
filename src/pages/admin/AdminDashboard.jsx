@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { getAllOrders } from '../../services/orders';
 import { getCurrentShift } from '../../services/shifts';
+import { formatARS } from '../../utils/format';
 
 const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
@@ -48,7 +49,6 @@ const AdminDashboard = () => {
     const totalOrders = filteredOrders.length;
     const pendingOrders = filteredOrders.filter(o => o.status === 'pending' || o.status === 'preparing').length;
     
-    // Calcular productos más vendidos
     const productCounts = {};
     deliveredOrders.forEach(order => {
       order.items?.forEach(item => {
@@ -107,7 +107,8 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Recaudación Total" 
-          value={`$${stats.totalRevenue}`} 
+          value={stats.totalRevenue} 
+          isCurrency={true}
           icon={DollarSign} 
           trend="+12%" 
           positive={true} 
@@ -128,7 +129,8 @@ const AdminDashboard = () => {
         />
         <StatCard 
           title="Ticket Promedio" 
-          value={`$${stats.totalOrders > 0 ? (stats.totalRevenue / stats.totalOrders).toFixed(0) : 0}`} 
+          value={stats.totalOrders > 0 ? (stats.totalRevenue / stats.totalOrders) : 0} 
+          isCurrency={true}
           icon={ArrowUpRight} 
           trend="Estable" 
           positive={true} 
@@ -186,7 +188,7 @@ const AdminDashboard = () => {
                     Pedido #{order.id.slice(-4).toUpperCase()}
                   </p>
                   <p className="text-[10px] text-gray-500 uppercase font-black">
-                    {order.status} • ${order.total}
+                    {order.status} • {formatARS(order.total)}
                   </p>
                 </div>
               </div>
@@ -201,19 +203,35 @@ const AdminDashboard = () => {
   );
 };
 
-const StatCard = ({ title, value, icon: Icon, trend, positive }) => (
-  <div className="bg-card/30 border border-white/5 p-6 rounded-[2rem] hover:border-white/10 transition-all group">
-    <div className="flex justify-between items-start mb-4">
+const StatCard = ({ title, value, icon: Icon, trend, positive, isCurrency }) => (
+  <div className="bg-card/30 border border-white/5 p-6 rounded-[2rem] hover:border-white/10 transition-all group relative overflow-hidden">
+    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-all group-hover:scale-110">
+      <Icon size={120} />
+    </div>
+
+    <div className="flex justify-between items-start mb-4 relative z-10">
       <div className="p-3 bg-white/5 rounded-2xl group-hover:bg-primary/20 transition-all">
         <Icon className="text-gray-400 group-hover:text-primary transition-all" size={24} />
       </div>
-      <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest ${positive ? 'text-green-500' : 'text-red-500'}`}>
+      <div className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest ${positive ? 'text-green-500/80' : 'text-red-500/80'}`}>
         {positive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
         {trend}
       </div>
     </div>
-    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">{title}</p>
-    <p className="text-2xl font-black text-white">{value}</p>
+    
+    <div className="relative z-10">
+      <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">{title}</p>
+      {isCurrency ? (
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-xs font-black text-primary/60">$</span>
+          <span className="text-2xl font-black text-white tracking-tight">
+            {formatARS(value).replace('$ ', '')}
+          </span>
+        </div>
+      ) : (
+        <p className="text-2xl font-black text-white tracking-tight">{value}</p>
+      )}
+    </div>
   </div>
 );
 

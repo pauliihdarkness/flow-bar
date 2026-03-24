@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Lock, 
   Unlock, 
@@ -16,8 +17,10 @@ import { getAllOrders } from '../../services/orders';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import Badge from '../../components/ui/Badge';
+import Modal from '../../components/ui/Modal';
 
 const AdminShifts = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
   const [currentShift, setCurrentShift] = useState(null);
@@ -25,6 +28,7 @@ const AdminShifts = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [shiftOrders, setShiftOrders] = useState([]);
+  const [showCloseModal, setShowCloseModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -66,8 +70,10 @@ const AdminShifts = () => {
   };
 
   const handleCloseShift = async () => {
-    if (!window.confirm("¿Estás seguro de cerrar la caja actual? No se podrán recibir más pedidos hasta abrir una nueva.")) return;
-    
+    setShowCloseModal(true);
+  };
+
+  const confirmCloseShift = async () => {
     setProcessing(true);
     try {
       const deliveredOrders = shiftOrders.filter(o => o.status === 'delivered');
@@ -177,7 +183,11 @@ const AdminShifts = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {history.filter(h => h.status === 'closed').map((shift) => (
-            <div key={shift.id} className="bg-card/30 border border-white/5 p-6 rounded-[2rem] hover:border-white/10 transition-all flex items-center justify-between group">
+            <div 
+              key={shift.id} 
+              onClick={() => navigate(`/admin/shifts/${shift.id}`)}
+              className="bg-card/30 border border-white/5 p-6 rounded-[2rem] hover:border-primary/30 hover:bg-white/5 transition-all flex items-center justify-between group cursor-pointer"
+            >
               <div>
                 <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">
                   {shift.openedAt?.toLocaleDateString()}
@@ -200,6 +210,16 @@ const AdminShifts = () => {
           )}
         </div>
       </div>
+
+      <Modal 
+        isOpen={showCloseModal}
+        onClose={() => setShowCloseModal(false)}
+        onConfirm={confirmCloseShift}
+        title="Cerrar Jornada"
+        message="¿Estás seguro de cerrar la caja actual? No se podrán recibir más pedidos hasta abrir una nueva."
+        type="warning"
+        confirmText="Cerrar Caja"
+      />
     </div>
   );
 };
