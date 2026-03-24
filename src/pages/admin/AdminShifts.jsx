@@ -17,6 +17,7 @@ import { getAllOrders } from '../../services/orders';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import Badge from '../../components/ui/Badge';
+import { formatARS } from '../../utils/format';
 import Modal from '../../components/ui/Modal';
 
 const AdminShifts = () => {
@@ -159,7 +160,7 @@ const AdminShifts = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-card/30 border border-white/5 p-8 rounded-[2rem]">
             <p className="text-gray-500 text-xs font-black uppercase mb-2">Ventas del Turno</p>
-            <p className="text-3xl font-black">${shiftOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + (o.total || 0), 0)}</p>
+            <p className="text-3xl font-black">{formatARS(shiftOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + (o.total || 0), 0))}</p>
           </div>
           <div className="bg-card/30 border border-white/5 p-8 rounded-[2rem]">
             <p className="text-gray-500 text-xs font-black uppercase mb-2">Pedidos Totales</p>
@@ -193,7 +194,7 @@ const AdminShifts = () => {
                   {shift.openedAt?.toLocaleDateString()}
                 </p>
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-lg">${shift.totalRevenue || 0}</span>
+                  <span className="font-bold text-lg">{formatARS(shift.totalRevenue || 0)}</span>
                   <span className="text-xs text-gray-500">• {shift.orderCount || 0} pedidos</span>
                 </div>
                 <p className="text-[10px] text-gray-400 mt-1">

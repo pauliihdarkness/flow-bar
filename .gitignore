@@ -35,3 +35,6 @@ auth-debug.log*
 *.sw?
 Thumbs.db
 
+# Documentación
+doc/
+
