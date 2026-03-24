@@ -21,7 +21,7 @@ Flow Bar busca eliminar las filas en bares con alta concurrencia permitiendo ped
 - **Seguimiento en Vivo**: El estado del pedido (En Cola → Cocina → ¡Listo! → Entregado) se actualiza en tiempo real directamente en el ticket.
 - **Historial Local**: Los pedidos del cliente se guardan localmente y se pueden consultar en cualquier momento durante la sesión.
 
-### 📋 Panel de Barra (Barman)
+### 📋 Panel de Barra (Bartender)
 - **Pedidos en Tiempo Real**: Notificaciones instantáneas al recibir un nuevo pedido vía `onSnapshot`.
 - **Gestión de Estados**: Flujo de preparación (Pendiente → Preparando → Listo → Entregado).
 - **Comunicación en Vivo**: Sistema de chat integrado para coordinación del equipo.
@@ -29,7 +29,7 @@ Flow Bar busca eliminar las filas en bares con alta concurrencia permitiendo ped
 ### 🔐 Panel de Administración
 - **Dashboard**: Vista general de ventas activas, pedidos totales y turnos actuales con métricas formateadas.
 - **Gestión de Menú**: CRUD completo de productos, precios, imágenes y categorías.
-- **Personal**: Administración de usuarios (roles Admin/Barman).
+- **Personal**: Administración de usuarios (roles Admin/Bartender).
 - **Control de Caja**: Apertura/cierre de jornadas con resumen de ventas, pedidos entregados y tiempo transcurrido.
 - **Historial de Turnos**: Registro detallado de cada jornada con desglose de pedidos individuales.
 - **Historial de Pedidos**: Auditoría completa de todas las órdenes procesadas.
@@ -87,7 +87,7 @@ flow-bar/
 │   │   ├── menu/               # Vista Cliente
 │   │   │   ├── MenuPage.jsx    #   Menú, carrito y checkout
 │   │   │   └── OrderReceipt.jsx#   Comprobante digital (ticket)
-│   │   ├── bar/                # Vista Barman
+│   │   ├── bar/                # Vista Bartender
 │   │   │   └── BarPage.jsx     #   Gestión de pedidos en vivo
 │   │   └── admin/              # Vista Administrador
 │   │       ├── AdminPage.jsx   #   Layout con sidebar
@@ -135,7 +135,7 @@ Estructura plana para máxima velocidad y consultas cruzadas simples.
 | `products` | Menú digital | `name`, `price`, `category`, `image`, `active` |
 | `categories` | Clasificación de productos | `name`, `order` |
 | `orders` | Pedidos (Núcleo) | `items[]`, `total`, `status`, `shiftId`, `createdAt` |
-| `users` | Staff (Admin/Barman) | `email`, `role`, `active` |
+| `users` | Staff (Admin/Bartender) | `email`, `role`, `active` |
 | `shifts` | Control de caja | `openedBy`, `openedAt`, `closedAt`, `totalRevenue` |
 
 ### Flujo de Estados de Pedidos
@@ -153,7 +153,7 @@ sequenceDiagram
     participant C as 👤 Cliente
     participant M as 📱 Menú Digital
     participant F as 🔥 Firestore
-    participant B as 🍸 Panel Barman
+    participant B as 🍸 Panel Bartender
 
     C->>M: Escanea QR → /menu
     M->>M: Navega productos, agrega al carrito
@@ -214,7 +214,7 @@ npm run build
 |---|---|---|
 | `/menu` | 🌐 Público | Menú digital y carrito |
 | `/menu/order/:id` | 🌐 Público | Comprobante/ticket de pedido |
-| `/bar` | 🔒 Barman | Panel de gestión de pedidos |
+| `/bar` | 🔒 Bartender | Panel de gestión de pedidos |
 | `/admin` | 🔒 Admin | Dashboard administrativo |
 | `/admin/products` | 🔒 Admin | Gestión de productos |
 | `/admin/categories` | 🔒 Admin | Gestión de categorías |
