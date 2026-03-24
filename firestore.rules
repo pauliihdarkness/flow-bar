@@ -40,10 +40,10 @@ service cloud.firestore {
 
     // REGLAS PARA PEDIDOS (ORDERS)
     match /orders/{orderId} {
-      // El cliente puede crear su pedido al escanear el QR
-      allow create: if true;
-      // Solo el Staff puede ver y gestionar los pedidos pendientes y pagados
-      allow read, update, delete: if isStaff();
+      // El cliente puede crear su pedido y ver su comprobante
+      allow create, read: if true;
+      // Solo el Staff puede gestionar los pedidos (actualizar estado, eliminar)
+      allow update, delete: if isStaff();
     }
 
     // REGLAS PARA JORNADAS (SHIFTS)

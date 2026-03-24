@@ -180,5 +180,8 @@ export const subscribeToOrder = (orderId, callback) => {
     } else {
       callback(null);
     }
+  }, (error) => {
+    console.error("Error subscribing to order:", error);
+    callback(null);
   });
 };
