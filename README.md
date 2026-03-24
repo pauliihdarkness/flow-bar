@@ -48,7 +48,6 @@ Flow Bar busca eliminar las filas en bares con alta concurrencia permitiendo ped
 | **Routing** | [React Router Dom 7](https://reactrouter.com/) |
 | **Base de Datos** | [Firebase Cloud Firestore](https://firebase.google.com/) (Realtime NoSQL) |
 | **Autenticación** | [Firebase Auth](https://firebase.google.com/products/auth) |
-| **Hosting** | Hostinger (Build estático con SPA fallback) |
 
 ---
 
