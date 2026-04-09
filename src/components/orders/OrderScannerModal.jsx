@@ -1,10 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { Camera, Loader2, ScanLine, X } from 'lucide-react';
 import Button from '../ui/Button';
 import { parseOrderQrValue } from '../../utils/qr';
 
 const SCANNER_ELEMENT_ID = 'order-qr-reader';
+
+const disposeScanner = async (scanner) => {
+  if (!scanner) {
+    return;
+  }
+
+  try {
+    const state = scanner.getState();
+
+    if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+      await scanner.stop();
+    }
+  } catch {
+    // Ignoramos errores de carrera al cerrar en desarrollo con Strict Mode.
+  }
+
+  try {
+    scanner.clear();
+  } catch {
+    // clear() falla si el DOM ya no esta disponible o si el scanner no llego a montar.
+  }
+};
 
 const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
   const scannerRef = useRef(null);
@@ -21,6 +43,10 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
     let isCancelled = false;
     const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
     scannerRef.current = scanner;
+    setStatus('starting');
+    setError('');
+    setManualValue('');
+    isHandlingScanRef.current = false;
 
     const handleDecodedValue = async (decodedText) => {
       if (isHandlingScanRef.current) {
@@ -48,9 +74,6 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
 
     const startScanner = async () => {
       try {
-        setStatus('starting');
-        setError('');
-
         await scanner.start(
           { facingMode: 'environment' },
           {
@@ -61,6 +84,11 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
           handleDecodedValue,
           () => {}
         );
+
+        if (isCancelled) {
+          await disposeScanner(scanner);
+          return;
+        }
 
         if (!isCancelled) {
           setStatus('ready');
@@ -78,18 +106,11 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
     return () => {
       isCancelled = true;
       isHandlingScanRef.current = false;
-      setStatus('idle');
-      setError('');
-      setManualValue('');
 
       const activeScanner = scannerRef.current;
       scannerRef.current = null;
 
-      if (activeScanner) {
-        activeScanner.stop().catch(() => {}).finally(() => {
-          activeScanner.clear().catch(() => {});
-        });
-      }
+      disposeScanner(activeScanner);
     };
   }, [isOpen, onScan]);
 
