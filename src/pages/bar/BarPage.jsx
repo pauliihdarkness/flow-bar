@@ -17,6 +17,7 @@ import { useToast } from '../../context/ToastContext';
 import { formatARS } from '../../utils/format';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
+import newNotificationSound from '../../assets/sound/new-notification.mp3';
 
 const BarPage = () => {
   const { showToast } = useToast();
@@ -33,7 +34,7 @@ const BarPage = () => {
   useEffect(() => {
     const unsubscribe = subscribeToOrders((newOrders) => {
       if (newOrders.length > orders.length) {
-        new Audio('/notification.mp3').play().catch(() => {});
+        new Audio(newNotificationSound).play().catch(() => {});
       }
       setOrders(newOrders);
     });
