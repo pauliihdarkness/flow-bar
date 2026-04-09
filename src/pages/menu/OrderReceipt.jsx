@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Clock, Flame, CheckCircle2, Handshake, Printer, Share2 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { subscribeToOrder } from '../../services/orders';
 import { formatARS } from '../../utils/format';
+import { buildOrderQrValue } from '../../utils/qr';
 import Button from '../../components/ui/Button';
 
 const statusLabels = {
@@ -145,6 +147,21 @@ const OrderReceipt = () => {
                 Estado: {statusLabels[order.status]}
               </p>
             </header>
+
+            <section className="border-b-2 border-dashed border-dark/20 pb-6 mb-6 text-center">
+              <div className="inline-flex p-4 border border-dark/10 rounded-[2rem] bg-white shadow-sm">
+                <QRCodeSVG
+                  value={buildOrderQrValue(order.id)}
+                  size={172}
+                  bgColor="#ffffff"
+                  fgColor="#121212"
+                  level="M"
+                  includeMargin
+                />
+              </div>
+              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-dark/40 mt-4">Presenta este QR en barra</p>
+              <p className="text-[10px] font-bold text-dark/60 mt-1">Se valida solo cuando tu pedido estA listo para entregar.</p>
+            </section>
 
             {/* Items table */}
             <table className="w-full mb-8" aria-label="Detalle de productos">

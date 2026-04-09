@@ -6,7 +6,8 @@ const Button = ({
   variant = 'primary', 
   className = '', 
   disabled = false,
-  fullWidth = false 
+  fullWidth = false,
+  ...props
 }) => {
   const baseStyles = 'px-6 py-3 rounded-2xl font-semibold transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2';
   
@@ -21,6 +22,7 @@ const Button = ({
     <button
       onClick={onClick}
       disabled={disabled}
+      {...props}
       className={`${baseStyles} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
     >
       {children}

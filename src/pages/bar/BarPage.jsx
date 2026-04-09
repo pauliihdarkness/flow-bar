@@ -3,20 +3,21 @@ import {
   Clock, 
   CheckCircle2, 
   Play, 
-  Check, 
   ChevronRight,
   LogOut,
   Bell,
   AlertCircle,
   Zap,
-  Handshake
+  Handshake,
+  ScanLine
 } from 'lucide-react';
-import { subscribeToOrders, updateOrderStatus } from '../../services/orders';
+import { getOrderById, subscribeToOrders, updateOrderStatus } from '../../services/orders';
 import { logoutUser } from '../../services/auth';
 import { useToast } from '../../context/ToastContext';
 import { formatARS } from '../../utils/format';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
+import OrderScannerModal from '../../components/orders/OrderScannerModal';
 import newNotificationSound from '../../assets/sound/new-notification.mp3';
 
 const BarPage = () => {
@@ -24,6 +25,7 @@ const BarPage = () => {
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState('active'); // active, ready, delivered
   const [now, setNow] = useState(new Date());
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Actualizar el "ahora" cada minuto para que los contadores de tiempo se muevan
   useEffect(() => {
@@ -58,6 +60,26 @@ const BarPage = () => {
         showToast("Error al actualizar el estado", "error");
       }
     }
+  };
+
+  const handleQrDelivery = async (orderId) => {
+    const order = await getOrderById(orderId);
+
+    if (!order) {
+      throw new Error('No se encontro el pedido escaneado.');
+    }
+
+    if (order.status === 'delivered') {
+      throw new Error('Ese pedido ya fue entregado.');
+    }
+
+    if (order.status !== 'ready') {
+      throw new Error('El pedido aun no esta listo para entregar.');
+    }
+
+    await updateOrderStatus(order.id, 'delivered');
+    showToast(`Pedido #${order.id.slice(-4).toUpperCase()} entregado`, 'success');
+    setIsScannerOpen(false);
   };
 
   const activeOrdersCount = useMemo(() => 
@@ -109,19 +131,30 @@ const BarPage = () => {
           </div>
         </div>
 
-        <div className="flex gap-2 bg-dark/50 p-1.5 rounded-[2rem] border border-white/5 shadow-inner">
-          <button 
-            onClick={() => setFilter('active')}
-            className={`px-8 py-2.5 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all duration-300 ${filter === 'active' ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-105' : 'text-gray-500 hover:text-gray-300'}`}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            className="px-5 py-3 rounded-[1.5rem] border-white/10 bg-white/5"
+            onClick={() => setIsScannerOpen(true)}
           >
-            Activos
-          </button>
-          <button 
-            onClick={() => setFilter('ready')}
-            className={`px-8 py-2.5 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all duration-300 ${filter === 'ready' ? 'bg-green-600 text-white shadow-xl shadow-green-600/20 scale-105' : 'text-gray-500 hover:text-gray-300'}`}
-          >
-            Listos
-          </button>
+            <ScanLine size={16} />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Escanear QR</span>
+          </Button>
+
+          <div className="flex gap-2 bg-dark/50 p-1.5 rounded-[2rem] border border-white/5 shadow-inner">
+            <button 
+              onClick={() => setFilter('active')}
+              className={`px-8 py-2.5 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all duration-300 ${filter === 'active' ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-105' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+              Activos
+            </button>
+            <button 
+              onClick={() => setFilter('ready')}
+              className={`px-8 py-2.5 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all duration-300 ${filter === 'ready' ? 'bg-green-600 text-white shadow-xl shadow-green-600/20 scale-105' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+              Listos
+            </button>
+          </div>
         </div>
 
         <button 
@@ -240,6 +273,12 @@ const BarPage = () => {
           </div>
         )}
       </main>
+
+      <OrderScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleQrDelivery}
+      />
     </div>
   );
 };
