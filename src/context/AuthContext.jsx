@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDocFromServer } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 
 const AuthContext = createContext();
@@ -11,20 +11,39 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Buscar datos adicionales en Firestore (rol, barId)
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
-          setUserData(userDoc.data());
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (firebaseUser) => {
+        try {
+          if (firebaseUser) {
+            // Buscar datos adicionales en Firestore (rol, barId)
+            const userDoc = await getDocFromServer(doc(db, 'users', firebaseUser.uid));
+            if (userDoc.exists()) {
+              setUserData(userDoc.data());
+            } else {
+              setUserData(null);
+            }
+
+            setUser(firebaseUser);
+          } else {
+            setUser(null);
+            setUserData(null);
+          }
+        } catch (error) {
+          console.warn('No se pudieron cargar los datos del usuario desde Firestore:', error?.message || error);
+          setUser(firebaseUser || null);
+          setUserData(null);
+        } finally {
+          setLoading(false);
         }
-        setUser(firebaseUser);
-      } else {
+      },
+      (error) => {
+        console.warn('Error en estado de autenticacion:', error?.message || error);
         setUser(null);
         setUserData(null);
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    );
 
     return () => unsubscribe();
   }, []);

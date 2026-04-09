@@ -1,11 +1,30 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
-import { Camera, Loader2, ScanLine, X } from 'lucide-react';
+import { Camera, Loader2, RefreshCcw, ScanLine, X } from 'lucide-react';
 import Button from '../ui/Button';
 import { parseOrderQrValue } from '../../utils/qr';
 
 const SCANNER_ELEMENT_ID = 'order-qr-reader';
 const INVALID_QR_FEEDBACK_COOLDOWN_MS = 1600;
+
+const REAR_CAMERA_LABEL_PATTERN = /back|rear|environment|trasera|posterior|externa/i;
+
+const getPreferredCameraId = (cameras = [], selectedCameraId) => {
+    if (!cameras.length) {
+        return null;
+    }
+
+    if (selectedCameraId && cameras.some((camera) => camera.id === selectedCameraId)) {
+        return selectedCameraId;
+    }
+
+    const rearCamera = cameras.find((camera) => REAR_CAMERA_LABEL_PATTERN.test(camera.label || ''));
+    if (rearCamera) {
+        return rearCamera.id;
+    }
+
+    return cameras[0].id;
+};
 
 const disposeScanner = async (scanner) => {
     if (!scanner) {
@@ -44,6 +63,8 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
         return window.matchMedia('(max-width: 768px)').matches;
     });
     const [retryToken, setRetryToken] = useState(0);
+    const [availableCameras, setAvailableCameras] = useState([]);
+    const [selectedCameraId, setSelectedCameraId] = useState('');
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -83,7 +104,7 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
                 width: isMobileLayout ? mobileQrBoxSize : 220,
                 height: isMobileLayout ? mobileQrBoxSize : 220,
             },
-            aspectRatio: isMobileLayout ? 1.6 : 1,
+            aspectRatio: isMobileLayout ? 1 : 1,
             disableFlip: false,
         };
 
@@ -122,15 +143,35 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
         };
 
         const startScanner = async () => {
-            const cameraFallbackChain = [
-                { facingMode: { exact: 'environment' } },
-                { facingMode: 'environment' },
-                { facingMode: 'user' },
-            ];
-
             let startError = null;
 
             try {
+                let preferredCameraId = selectedCameraId;
+
+                try {
+                    const cameras = await Html5Qrcode.getCameras();
+                    const preferredId = getPreferredCameraId(cameras, selectedCameraId);
+
+                    if (!isCancelled) {
+                        setAvailableCameras(cameras);
+
+                        if (preferredId && preferredId !== selectedCameraId) {
+                            setSelectedCameraId(preferredId);
+                        }
+                    }
+
+                    preferredCameraId = preferredId;
+                } catch {
+                    // Algunos navegadores no exponen la lista sin permiso previo.
+                }
+
+                const cameraFallbackChain = [
+                    preferredCameraId,
+                    { facingMode: { exact: 'environment' } },
+                    { facingMode: 'environment' },
+                    { facingMode: 'user' },
+                ].filter(Boolean);
+
                 for (const cameraConfig of cameraFallbackChain) {
                     try {
                         await scanner.start(
@@ -178,7 +219,7 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
 
             disposeScanner(activeScanner);
         };
-    }, [isOpen, onScan, isMobileLayout, retryToken]);
+    }, [isOpen, onScan, isMobileLayout, retryToken, selectedCameraId]);
 
     if (!isOpen) {
         return null;
@@ -209,6 +250,21 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
         setRetryToken((currentValue) => currentValue + 1);
     };
 
+    const handleSwitchCamera = () => {
+        if (availableCameras.length < 2) {
+            return;
+        }
+
+        const currentCameraIndex = availableCameras.findIndex((camera) => camera.id === selectedCameraId);
+        const nextIndex = currentCameraIndex >= 0
+            ? (currentCameraIndex + 1) % availableCameras.length
+            : 0;
+
+        setError('');
+        setSelectedCameraId(availableCameras[nextIndex].id);
+        setRetryToken((currentValue) => currentValue + 1);
+    };
+
     return (
         <div className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center sm:p-4">
             <div className="absolute inset-0 bg-dark/85 backdrop-blur-md" onClick={onClose} />
@@ -235,7 +291,7 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
                 <div className="grid h-[calc(100dvh-7.25rem)] gap-4 overflow-y-auto pb-2 sm:h-auto sm:gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                     <div className="rounded-[2rem] border border-white/5 bg-dark/60 p-3 sm:p-4">
                         <div className="relative overflow-hidden rounded-[1.75rem] border border-dashed border-white/10 bg-black/30">
-                            <div id={SCANNER_ELEMENT_ID} className="min-h-[46dvh] w-full sm:min-h-[320px]" />
+                            <div id={SCANNER_ELEMENT_ID} className="h-[46dvh] w-full [&>div]:h-full [&>div]:w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover sm:h-[320px]" />
                             {status === 'starting' && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-dark/85 text-white">
                                     <Loader2 className="animate-spin text-primary" size={32} />
@@ -269,6 +325,13 @@ const OrderScannerModal = ({ isOpen, onClose, onScan }) => {
                         {status === 'error' && (
                             <Button variant="secondary" fullWidth onClick={handleRetryCamera}>
                                 Reintentar camara
+                            </Button>
+                        )}
+
+                        {availableCameras.length > 1 && (
+                            <Button variant="secondary" fullWidth onClick={handleSwitchCamera} disabled={status === 'processing' || status === 'starting'}>
+                                <RefreshCcw size={16} />
+                                Cambiar camara
                             </Button>
                         )}
 

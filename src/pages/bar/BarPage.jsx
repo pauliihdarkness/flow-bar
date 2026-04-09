@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Clock, 
   CheckCircle2, 
@@ -26,6 +26,19 @@ const BarPage = () => {
   const [filter, setFilter] = useState('active'); // active, ready, delivered
   const [now, setNow] = useState(new Date());
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const notificationAudioRef = useRef(null);
+
+  useEffect(() => {
+    notificationAudioRef.current = new Audio(newNotificationSound);
+    notificationAudioRef.current.preload = 'auto';
+
+    return () => {
+      if (notificationAudioRef.current) {
+        notificationAudioRef.current.pause();
+        notificationAudioRef.current.src = '';
+      }
+    };
+  }, []);
 
   // Actualizar el "ahora" cada minuto para que los contadores de tiempo se muevan
   useEffect(() => {
@@ -36,7 +49,16 @@ const BarPage = () => {
   useEffect(() => {
     const unsubscribe = subscribeToOrders((newOrders) => {
       if (newOrders.length > orders.length) {
-        new Audio(newNotificationSound).play().catch(() => {});
+        const audio = notificationAudioRef.current;
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.play().catch((error) => {
+            if (error?.name !== 'AbortError') {
+              console.warn('No se pudo reproducir el sonido de notificacion:', error?.message || error);
+            }
+          });
+        }
       }
       setOrders(newOrders);
     });
@@ -110,63 +132,66 @@ const BarPage = () => {
   return (
     <div className="min-h-screen bg-dark text-white flex flex-col font-sans">
       {/* Header Barra */}
-      <header className="px-8 py-6 border-b border-white/5 bg-card/40 flex justify-between items-center sticky top-0 z-50 backdrop-blur-2xl">
-        <div className="flex items-center gap-6">
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-card/40 px-4 py-4 backdrop-blur-2xl sm:px-6 sm:py-5 lg:px-8 lg:py-6">
+        <div className="flex items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-6">
           <div className="relative">
-            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/30">
-              <Bell className="text-white animate-bounce-slow" size={28} />
+            <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/30 sm:h-14 sm:w-14">
+              <Bell className="text-white animate-bounce-slow" size={22} />
             </div>
             {activeOrdersCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-white text-dark w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-dark shadow-lg">
+              <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-dark bg-white text-[10px] font-black text-dark shadow-lg">
                 {activeOrdersCount}
               </span>
             )}
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight leading-none mb-1">Panel de <span className="text-primary italic">Barra</span></h1>
+            <h1 className="mb-1 text-xl font-black leading-none tracking-tight sm:text-2xl">Panel de <span className="text-primary italic">Barra</span></h1>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">{activeOrdersCount} PEDIDOS EN COLA</p>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 sm:text-[10px]">{activeOrdersCount} PEDIDOS EN COLA</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+          <button
+            onClick={logoutUser}
+            className="rounded-2xl border border-transparent bg-white/5 p-3 text-gray-400 transition-all hover:border-red-400/20 hover:bg-red-400/10 hover:text-red-400 sm:p-4"
+            aria-label="Cerrar sesion"
+          >
+            <LogOut size={20} />
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3 sm:mt-5 sm:flex-row sm:items-center sm:justify-between">
           <Button
             variant="secondary"
-            className="px-5 py-3 rounded-[1.5rem] border-white/10 bg-white/5"
+            className="w-full rounded-[1.25rem] border-white/10 bg-white/5 px-5 py-3 sm:w-auto sm:rounded-[1.5rem]"
             onClick={() => setIsScannerOpen(true)}
           >
             <ScanLine size={16} />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Escanear QR</span>
           </Button>
 
-          <div className="flex gap-2 bg-dark/50 p-1.5 rounded-[2rem] border border-white/5 shadow-inner">
+          <div className="flex w-full gap-2 overflow-x-auto rounded-[1.5rem] border border-white/5 bg-dark/50 p-1.5 shadow-inner sm:w-auto sm:rounded-[2rem]">
             <button 
               onClick={() => setFilter('active')}
-              className={`px-8 py-2.5 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all duration-300 ${filter === 'active' ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-105' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`flex-1 whitespace-nowrap rounded-[1.1rem] px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-300 sm:flex-none sm:rounded-[1.5rem] sm:px-8 sm:text-xs sm:tracking-widest ${filter === 'active' ? 'bg-primary text-white shadow-xl shadow-primary/20 sm:scale-105' : 'text-gray-500 hover:text-gray-300'}`}
             >
               Activos
             </button>
             <button 
               onClick={() => setFilter('ready')}
-              className={`px-8 py-2.5 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all duration-300 ${filter === 'ready' ? 'bg-green-600 text-white shadow-xl shadow-green-600/20 scale-105' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`flex-1 whitespace-nowrap rounded-[1.1rem] px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-300 sm:flex-none sm:rounded-[1.5rem] sm:px-8 sm:text-xs sm:tracking-widest ${filter === 'ready' ? 'bg-green-600 text-white shadow-xl shadow-green-600/20 sm:scale-105' : 'text-gray-500 hover:text-gray-300'}`}
             >
               Listos
             </button>
           </div>
         </div>
-
-        <button 
-          onClick={logoutUser}
-          className="p-4 bg-white/5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-2xl transition-all border border-transparent hover:border-red-400/20"
-        >
-          <LogOut size={22} />
-        </button>
       </header>
 
       {/* Lista de Comandas */}
-      <main className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 overflow-y-auto flex-1 bg-dark/20">
+      <main className="flex-1 overflow-y-auto bg-dark/20 p-4 sm:p-6 lg:p-8 grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {activeOrders.map((order) => {
           const { label, color, border, icon: StatusIcon, pulse } = getStatusInfo(order.status);
           
@@ -181,19 +206,19 @@ const BarPage = () => {
           return (
             <div 
               key={order.id} 
-              className={`bg-card/60 backdrop-blur-md border ${isStale ? 'border-red-500/30' : 'border-white/5'} rounded-[2.5rem] flex flex-col overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:border-white/20 transition-all duration-500 group relative ${isStale ? 'animate-pulse-slow shadow-red-500/5' : ''}`}
+              className={`group relative flex flex-col overflow-hidden rounded-[1.75rem] border bg-card/60 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-500 hover:border-white/20 sm:rounded-[2.5rem] ${isStale ? 'border-red-500/30 animate-pulse-slow shadow-red-500/5' : 'border-white/5'}`}
             >
               {/* Indicador de Nuevo Pedido */}
               {isNew && (
                 <div className="absolute top-4 right-4 z-20">
-                  <div className="bg-primary text-dark font-black text-[8px] uppercase tracking-tighter px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg animate-bounce">
+                  <div className="flex items-center gap-1 rounded-lg bg-primary px-2 py-1 text-[8px] font-black uppercase tracking-tighter text-dark shadow-lg animate-bounce">
                     <Zap size={10} fill="currentColor" /> NUEVO
                   </div>
                 </div>
               )}
 
               {/* Header Comanda */}
-              <div className={`px-6 py-4 ${color} ${border} border-b flex justify-between items-center relative z-10 overflow-hidden`}>
+              <div className={`relative z-10 flex items-center justify-between overflow-hidden border-b px-4 py-3 sm:px-6 sm:py-4 ${color} ${border}`}>
                 <div className="flex items-center gap-3">
                   <div className={pulse ? "animate-pulse" : ""}>
                     <StatusIcon size={20} />
@@ -206,19 +231,19 @@ const BarPage = () => {
               </div>
 
               {/* Items */}
-              <div className="p-6 flex-1 space-y-4 relative z-10">
+              <div className="relative z-10 flex-1 space-y-4 p-4 sm:p-6">
                 <div className="space-y-3">
                   {order.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-center bg-white/[0.03] p-4 rounded-3xl border border-white/5 group/item hover:bg-white/[0.07] transition-all">
+                    <div key={idx} className="group/item flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.03] p-3 transition-all hover:bg-white/[0.07] sm:rounded-3xl sm:p-4">
                       <div className="flex gap-4 items-center">
                         <div className={`w-1.5 h-10 rounded-full ${getItemCategoryColor(item.category)} shadow-[0_0_10px_rgba(0,0,0,0.5)]`} />
                         <div className="flex flex-col">
-                          <span className="font-black text-white leading-tight text-lg group-hover:text-primary transition-colors">{item.name}</span>
+                          <span className="text-base font-black leading-tight text-white transition-colors group-hover:text-primary sm:text-lg">{item.name}</span>
                           <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">{item.category}</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-center bg-white text-dark w-14 h-14 rounded-[1.25rem] shadow-2xl transform group-hover/item:rotate-6 transition-transform">
-                        <span className="font-black text-2xl">{item.quantity || 1}</span>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-white text-dark shadow-2xl transition-transform group-hover/item:rotate-6 sm:h-14 sm:w-14 sm:rounded-[1.25rem]">
+                        <span className="text-xl font-black sm:text-2xl">{item.quantity || 1}</span>
                       </div>
                     </div>
                   ))}
@@ -226,7 +251,7 @@ const BarPage = () => {
               </div>
 
               {/* Footer Comanda */}
-              <div className="p-8 pt-0 mt-auto relative z-10">
+              <div className="relative z-10 mt-auto p-4 pt-0 sm:p-8 sm:pt-0">
                 <div className="flex justify-between items-center py-5 border-t border-white/5">
                   <div className={`flex items-center gap-2 ${isStale ? 'text-red-400' : 'text-gray-500'}`}>
                     {isStale ? <AlertCircle size={16} /> : <Clock size={16} />}
@@ -243,7 +268,7 @@ const BarPage = () => {
                 <Button 
                   fullWidth 
                   variant={order.status === 'pending' ? 'primary' : order.status === 'preparing' ? 'secondary' : 'primary'}
-                  className={`py-5 rounded-2xl group/btn transform active:scale-95 shadow-xl transition-all duration-300 ${isStale ? 'shadow-red-500/10' : ''}`}
+                  className={`group/btn transform rounded-2xl py-4 active:scale-95 shadow-xl transition-all duration-300 sm:py-5 ${isStale ? 'shadow-red-500/10' : ''}`}
                   onClick={() => handleStatusUpdate(order.id, order.status)}
                 >
                   <div className="flex items-center gap-2">
